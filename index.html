@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07111f">
+  <meta name="description" content="Wemofの公開情報をもとに、±3σ・値動きの純度・理由あり除外・MAE/MFEを過去データで検証するブラウザ研究ツール。">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+  <title>Wemof Lab — FX平均回帰研究ツール</title>
+</head>
+<body>
+<header class="topbar">
+  <div>
+    <div class="eyebrow">FX RESEARCH / OFFLINE-FIRST</div>
+    <h1>Wemof <span>Lab</span></h1>
+  </div>
+  <nav><a class="ghost" href="manual.html">？ 使い方</a></nav>
+</header>
+
+<main>
+  <section class="hero card">
+    <div>
+      <span class="pill">売買機能なし・研究専用</span>
+      <h2>「850連勝」より、<br><em>どれだけ逆行したか</em>を見る。</h2>
+      <p>公開情報からWemofの考え方を<strong>検証可能な仮説</strong>へ分解。USD/JPY 5分足CSVから、±σ到達・純度・「理由あり」フラグ・MAE/MFE・損切り幅別の期待値を比較します。</p>
+    </div>
+    <div class="hero-flow" aria-label="解析の流れ"><b>異常検知</b><i>→</i><b>純度</b><i>→</i><b>理由除外</b><i>→</i><b>MAE/MFE</b></div>
+  </section>
+
+  <div id="message" class="message" hidden></div>
+
+  <section class="grid2">
+    <article class="card upload-card">
+      <div class="section-head"><div><span class="kicker">STEP 1</span><h3>データを入れる</h3></div></div>
+      <label class="drop"><span>USD/JPY 5分足 OHLC CSV</span><small>timestamp/date, open, high, low, close</small><input id="ohlcFile" type="file" accept=".csv,text/csv"><b id="dataState">未読込</b></label>
+      <label class="drop optional"><span>経済指標・ニュース CSV（任意）</span><small>timestamp/date, title, importance</small><input id="eventFile" type="file" accept=".csv,text/csv"><b id="eventState">0 events</b></label>
+      <button id="sampleBtn" class="secondary wide">サンプルで試す</button>
+      <p class="note">CSVはサーバーへ送信しません。このブラウザ内だけで解析します。</p>
+    </article>
+
+    <article class="card settings-card">
+      <div class="section-head"><div><span class="kicker">STEP 2</span><h3>検証条件</h3></div><a href="manual.html#logic">判定ロジック</a></div>
+      <div class="preset-row"><button class="preset" data-tp="3" data-sl="100">深い損切り 3 / 100</button><button class="preset" data-tp="3" data-sl="20">リスク制限 3 / 20</button></div>
+      <div class="form-grid">
+        <label>BB期間<input id="bbPeriod" type="number" min="5" step="1"></label>
+        <label>σ倍率<input id="sigma" type="number" min="1" max="5" step="0.1"></label>
+        <label>純度を見る本数<input id="purityLookback" type="number" min="2" max="20"></label>
+        <label>純度しきい値<input id="purityThreshold" type="number" min="0" max="100"></label>
+        <label>総合スコアしきい値<input id="scoreThreshold" type="number" min="0" max="100"></label>
+        <label>利確 pips<input id="targetPips" type="number" min="0.1" step="0.1"></label>
+        <label>損切り pips<input id="stopPips" type="number" min="1" step="1"></label>
+        <label>最大保有本数<input id="maxBars" type="number" min="1" step="1"></label>
+        <label>指標除外 ±分<input id="eventWindowMinutes" type="number" min="0" step="1"></label>
+        <label>ブレイク判定本数<input id="breakoutLookback" type="number" min="2" step="1"></label>
+        <label>節目の間隔（円）<input id="roundStep" type="number" min="0.01" step="0.01"></label>
+        <label>節目距離（円）<input id="roundDistance" type="number" min="0" step="0.005"></label>
+        <label>往復コスト pips<input id="costPips" type="number" min="0" step="0.05"></label>
+      </div>
+      <button id="analyzeBtn" class="primary wide">解析する</button>
+    </article>
+  </section>
+
+  <section id="resultsSection" hidden>
+    <div class="summary-grid">
+      <article class="metric"><span>±σ候補</span><b id="candidateCount">—</b></article>
+      <article class="metric accent"><span>Wemof-like 適格</span><b id="qualifiedCount">—</b></article>
+      <article class="metric"><span>TP先行率</span><b id="winRate">—</b></article>
+      <article class="metric"><span>平均 MAE</span><b id="avgMae">—</b></article>
+      <article class="metric"><span>1候補期待値</span><b id="expectancy">—</b></article>
+      <article class="metric danger"><span>最大 MAE</span><b id="maxMae">—</b></article>
+    </div>
+
+    <section class="grid2 compare">
+      <article class="card"><div class="section-head"><div><span class="kicker">FILTER TEST</span><h3>何を足すと変わる？</h3></div></div>
+        <div class="table-wrap"><table><thead><tr><th>モデル</th><th>件数</th><th>TP先行</th><th>平均MAE</th><th>期待値</th></tr></thead><tbody id="modelBody"></tbody></table></div>
+        <p class="note">「単純±σ → 純度 → 理由除外」の順に、フィルターが本当に改善しているかを比較します。</p>
+      </article>
+      <article class="card"><div class="section-head"><div><span class="kicker">TAIL RISK</span><h3>損切り幅を変える</h3></div></div>
+        <div class="table-wrap"><table><thead><tr><th>SL</th><th>件数</th><th>TP先行</th><th>平均MAE</th><th>最大MAE</th><th>期待値</th></tr></thead><tbody id="riskBody"></tbody></table></div>
+        <p class="note">高勝率だけでなく、20 / 50 / 100pips の損失許容で期待値とテールリスクがどう変わるか確認します。</p>
+      </article>
+    </section>
+
+    <section class="card detail-card">
+      <div class="section-head"><div><span class="kicker">EVENT INSPECTOR</span><h3 id="detailTitle">候補を選択</h3></div><button id="exportBtn" class="secondary">結果CSVを書き出す</button></div>
+      <div class="detail-grid">
+        <div class="chart-shell"><canvas id="chart"></canvas><div class="legend"><span>● 上昇足</span><span>● 下落足</span><span>— ±σ</span><span>— ENTRY</span></div></div>
+        <aside class="detail-side">
+          <div id="detailScore" class="big-score">—</div><div class="score-caption">Wemof Score / 100</div>
+          <div id="scoreBreakdown" class="breakdown"></div>
+          <p id="detailText" class="detail-text">候補を選ぶと判定理由を表示します。</p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="card table-card">
+      <div class="section-head"><div><span class="kicker">ALL CANDIDATES</span><h3>候補一覧</h3></div><span class="hint">行を押すとチャート表示</span></div>
+      <div class="table-wrap tall"><table><thead><tr><th>時刻</th><th>方向</th><th>Score</th><th>純度</th><th>理由</th><th>判定</th><th>結果</th><th>MAE</th><th>MFE</th></tr></thead><tbody id="eventBody"></tbody></table></div>
+    </section>
+  </section>
+
+  <section class="card disclaimer">
+    <h3>重要</h3><p>これはWemof考案者・松井証券その他の公式アプリではありません。公開情報をもとに<strong>研究用に再構成した仮説モデル</strong>です。「説明がつかない」「純度が高い」といった裁量判断を完全再現するものではありません。実売買・投資助言・利益保証は行いません。</p>
+  </section>
+</main>
+<footer><span>Wemof Lab</span><a href="manual.html">使い方</a><span>データ処理: 端末内</span></footer>
+<script src="analysis-core.js"></script><script src="app.js"></script>
+</body></html>
