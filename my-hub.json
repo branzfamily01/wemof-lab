@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "title": "Wemof Lab",
+  "category": "Tools",
+  "summary": "Wemofの公開情報を検証可能な仮説へ分解し、USD/JPY 5分足CSVから純度・理由除外・MAE/MFE・期待値を比較するFX研究ツール。",
+  "tags": ["FX", "Wemof", "Backtest", "Bollinger Bands", "MAE", "MFE", "Research"],
+  "color": "blue",
+  "status": "active",
+  "visibility": "public",
+  "manualUrl": "https://branzfamily01.github.io/wemof-lab/manual.html",
+  "publicUrl": "https://branzfamily01.github.io/wemof-lab/",
+  "repoUrl": "https://github.com/branzfamily01/wemof-lab"
+}
