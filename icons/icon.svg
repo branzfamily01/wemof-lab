@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="t d">
+  <title id="t">Wemof Lab</title><desc id="d">Wemof Lab research icon</desc>
+  <rect width="512" height="512" rx="112" fill="#07111f"/>
+  <path d="M78 314c54-108 100-128 142-68 43 61 76 54 114-44 22-57 54-59 100-3" fill="none" stroke="#64d8ff" stroke-width="34" stroke-linecap="round"/>
+  <path d="M78 370h356" stroke="#9b8cff" stroke-width="18" stroke-linecap="round" opacity=".9"/>
+  <circle cx="334" cy="202" r="25" fill="#fff"/>
+</svg>
